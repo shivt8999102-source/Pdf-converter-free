@@ -1,36 +1,90 @@
-fist website               const pageWidth = doc.internal.pageSize.getWidth();
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My PDF Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; background-color: #f4f4f4; }
+        .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; }
+        input { margin: 20px 0; }
+        button { background: #28a745; color: white; border: none; padding: 10px 20px; cursor: pointer; border-radius: 5px; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Images to PDF Converter</h2>
+    <input type="file" id="imageInput" multiple accept="image/*">
+    <br>
+    <button id="convertBtn">Convert to PDF</button>
+    <p id="overlay" class="hidden">Processing... Please wait.</p>
+</div>
+
+<script>
+    const { jsPDF } = window.jspdf;
+
+    document.getElementById('convertBtn').addEventListener('click', async () => {
+        const input = document.getElementById('imageInput');
+        const overlay = document.getElementById('overlay');
+        
+        if (input.files.length === 0) {
+            alert("कृपया कम से कम एक इमेज चुनें!");
+            return;
+        }
+
+        overlay.classList.remove('hidden');
+        const pdfName = "MyFiles";
+        const doc = new jsPDF();
+
+        try {
+            for (let i = 0; i < input.files.length; i++) {
+                const file = input.files[i];
+                const imageData = await readFileAsDataURL(file);
+                
+                if (i > 0) doc.addPage();
+
+                const img = new Image();
+                img.src = imageData;
+                await new Promise(r => img.onload = r);
+
+                const pageWidth = doc.internal.pageSize.getWidth();
                 const pageHeight = doc.internal.pageSize.getHeight();
+                const imgRatio = img.width / img.height;
+                const pageRatio = pageWidth / pageHeight;
 
-                for (let i = 0; i < images.length; i++) {
-                    if (i > 0) doc.addPage();
-                    
-                    const img = new Image();
-                    img.src = images[i].data;
-                    await new Promise(r => img.onload = r);
-
-                    const imgRatio = img.width / img.height;
-                    const pageRatio = pageWidth / pageHeight;
-
-                    let w, h;
-                    if (imgRatio > pageRatio) {
-                        w = pageWidth;
-                        h = pageWidth / imgRatio;
-                    } else {
-                        h = pageHeight;
-                        w = pageHeight * imgRatio;
-                    }
-
-                    doc.addImage(images[i].data, 'JPEG', (pageWidth - w)/2, (pageHeight - h)/2, w, h, undefined, 'FAST');
+                let w, h;
+                if (imgRatio > pageRatio) {
+                    w = pageWidth;
+                    h = pageWidth / imgRatio;
+                } else {
+                    h = pageHeight;
+                    w = pageHeight * imgRatio;
                 }
 
-                doc.save(`${pdfName}.pdf`);
-            } catch (err) {
-                console.error(err);
-            } finally {
-                overlay.classList.add('hidden');
+                doc.addImage(imageData, 'JPEG', (pageWidth - w) / 2, (pageHeight - h) / 2, w, h, undefined, 'FAST');
             }
-        };
-    </script>
+
+            doc.save(`${pdfName}.pdf`);
+        } catch (err) {
+            console.error(err);
+            alert("कुछ गलती हुई है!");
+        } finally {
+            overlay.classList.add('hidden');
+        }
+    });
+
+    function readFileAsDataURL(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+</script>
+
 </body>
 </html>
-
